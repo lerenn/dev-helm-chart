@@ -1,0 +1,19 @@
+dependencies:
+  - name: opentelemetry-collector
+    version: 0.68.1
+    repository: https://open-telemetry.github.io/opentelemetry-helm-charts
+  - name: grafana
+    version: 6.58.9
+    repository: https://grafana.github.io/helm-charts
+  - name: loki-distributed
+    alias: loki
+    version: 0.74.6
+    repository: https://grafana.github.io/helm-charts
+  - name: mimir-distributed
+    alias: mimir
+    repository: "https://grafana.github.io/helm-charts"
+    version: 5.1.0
+  - name: tempo-distributed
+    alias: tempo
+    repository: "https://grafana.github.io/helm-charts"
+    version: 1.6.6

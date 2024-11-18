@@ -1,0 +1,153 @@
+opentelemetry-collector:
+  mode: deployment
+  config:
+    receivers:
+      jaeger: null
+      prometheus: null
+      zipkin: null
+    processors:
+      memory_limiter:
+        limit_percentage: 50
+        check_interval: 1s
+        spike_limit_percentage: 30
+      batch:
+        send_batch_size: 8192
+    exporters:
+      otlphttp/tempo:
+        endpoint: http://{{ .Release.Name }}-tempo-distributor:4318
+        tls:
+          insecure: true
+        headers:
+          X-Scope-OrgID: anonymous
+      otlphttp/mimir:
+        endpoint: http://{{ .Release.Name }}-mimir-distributor:8080/otlp
+        tls:
+          insecure: true
+        headers:
+          X-Scope-OrgID: anonymous
+      loki:
+        endpoint: http://{{ .Release.Name }}-loki-distributor:3100/loki/api/v1/push
+    service:
+      telemetry:
+        logs:
+          level: "debug"
+      pipelines:
+        traces:
+          receivers: [otlp]
+          processors: [memory_limiter, batch]
+          exporters: [otlphttp/tempo]
+        metrics:
+          receivers: [otlp]
+          processors: [memory_limiter, batch]
+          exporters: [otlphttp/mimir]
+        logs:
+          receivers: [otlp]
+          processors: [memory_limiter, batch]
+          exporters: [loki]
+
+grafana:
+  adminUser: admin
+  adminPassword: admin
+
+  datasources:
+    datasources.yaml:
+      apiVersion: 1
+      datasources:
+        # https://grafana.com/docs/grafana/latest/datasources/loki/#provision-the-loki-data-source
+        - name: Loki
+          uid: loki
+          type: loki
+          url: http://{{ .Release.Name }}-loki-gateway
+          isDefault: false
+        # https://grafana.com/docs/grafana/latest/datasources/prometheus/#provision-the-data-source
+        - name: Mimir
+          uid: prom
+          type: prometheus
+          url: http://{{ .Release.Name }}-mimir-nginx/prometheus
+          isDefault: true
+        # https://grafana.com/docs/grafana/latest/datasources/tempo/configure-tempo-data-source/#provision-the-data-source
+        - name: Tempo
+          uid: tempo
+          type: tempo
+          url: http://{{ .Release.Name }}-tempo-query-frontend:3100
+          isDefault: false
+          jsonData:
+            tracesToLogsV2:
+              datasourceUid: loki
+            lokiSearch:
+              datasourceUid: loki
+            tracesToMetrics:
+              datasourceUid: prom
+            serviceMap:
+              datasourceUid: prom
+loki:
+  loki:
+    commonConfig:
+      replication_factor: 1
+    storage:
+      type: 'filesystem'
+    podSecurityContext:
+      runAsNonRoot: false
+      fsGroup: 10
+      runAsGroup: 0
+      runAsUser: 0
+    containerSecurityContext:
+      readOnlyRootFilesystem: false
+      capabilities:
+      allowPrivilegeEscalation: true
+  singleBinary:
+    replicas: 1
+
+mimir:
+  alertmanager:
+    podSecurityContext:
+      runAsNonRoot: false
+      fsGroup: 10
+      runAsGroup: 0
+      runAsUser: 0
+    containerSecurityContext:
+      readOnlyRootFilesystem: false
+      capabilities:
+      allowPrivilegeEscalation: true
+  compactor:
+    podSecurityContext:
+      runAsNonRoot: false
+      fsGroup: 10
+      runAsGroup: 0
+      runAsUser: 0
+    containerSecurityContext:
+      readOnlyRootFilesystem: false
+      capabilities:
+      allowPrivilegeEscalation: true
+  ingester:
+    podSecurityContext:
+      runAsNonRoot: false
+      fsGroup: 10
+      runAsGroup: 0
+      runAsUser: 0
+    containerSecurityContext:
+      readOnlyRootFilesystem: false
+      capabilities:
+      allowPrivilegeEscalation: true
+  minio:
+    enabled: true
+    securityContext:
+      enabled: false
+  store_gateway:
+    podSecurityContext:
+      runAsNonRoot: false
+      fsGroup: 10
+      runAsGroup: 0
+      runAsUser: 0
+    containerSecurityContext:
+      readOnlyRootFilesystem: false
+      capabilities:
+      allowPrivilegeEscalation: true
+
+tempo:
+  traces:
+    otlp:
+      http:
+        enabled: true
+        receiverConfig:
+          endpoint: 0.0.0.0:4318
