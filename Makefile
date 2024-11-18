@@ -33,3 +33,19 @@ otel-lgtm/delete: ## Delete OpenTelemetry Collector with LGTM
 .PHONY: otel-lgtm/port-forward
 otel-lgtm/port-forward: ## Port forward OpenTelemetry Collector with LGTM
 	@${KUBECTL_CMD} port-forward svc/lgtm-grafana 8080:80
+
+.PHONY: temporal/deploy
+temporal/deploy: ## Deploy Temporal
+	@${HELM_CMD} upgrade --install temporal ./temporal-dev
+
+.PHONY: temporal/delete
+temporal/delete: ## Delete Temporal
+	@${HELM_CMD} delete temporal
+
+.PHONY: temporal/port-forward/api
+temporal/port-forward/api: ## Port forward Temporal API
+	@${KUBECTL_CMD} port-forward svc/temporal 7233:7233
+
+.PHONY: temporal/port-forward/ui
+temporal/port-forward/ui: ## Port forward Temporal API
+	@${KUBECTL_CMD} port-forward svc/temporal-ui 8080:8080

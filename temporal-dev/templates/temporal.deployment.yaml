@@ -1,0 +1,53 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: temporal
+  labels:
+    app: temporal
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: temporal
+  template:
+    metadata:
+      annotations: {}
+      labels:
+        app: temporal
+    spec:
+      containers:
+        - name: temporal
+          image: "temporalio/auto-setup:{{ .Chart.AppVersion }}"
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: DB
+              value: postgres12
+            - name: DB_PORT
+              value: "5432"
+            - name: POSTGRES_USER
+              value: temporal
+            - name: POSTGRES_PWD
+              value: temporal
+            - name: POSTGRES_SEEDS
+              value: "temporal-postgresql.{{ .Release.Namespace }}.svc.cluster.local"
+            - name: DYNAMIC_CONFIG_FILE_PATH
+              value: /etc/temporal/custom-config/development-sql.yaml
+          ports:
+            - name: temporal
+              containerPort: 7233
+              protocol: TCP
+          livenessProbe:
+            initialDelaySeconds: 150
+            tcpSocket:
+              port: rpc
+          resources: {}
+          volumeMounts:
+            - mountPath: /etc/temporal/custom-config/
+              name: temporal-config
+      volumes:
+        - name: temporal-config
+          configMap:
+            name: temporal-config
+            items:
+              - key: development-sql.yaml
+                path: development-sql.yaml

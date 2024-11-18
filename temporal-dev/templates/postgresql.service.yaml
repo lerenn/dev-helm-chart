@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: temporal-postgresql
+  labels:
+    app: temporal-postgresql
+spec:
+  type: LoadBalancer
+  ports:
+    - port: 5432
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    app: temporal-postgresql

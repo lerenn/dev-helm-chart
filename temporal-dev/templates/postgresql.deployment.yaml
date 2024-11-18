@@ -1,0 +1,31 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: temporal-postgresql
+  labels:
+    app: temporal-postgresql
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: temporal-postgresql
+  template:
+    metadata:
+      annotations: {}
+      labels:
+        app: temporal-postgresql
+    spec:
+      containers:
+        - name: temporal-postgresql
+          image: postgres:17.1
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: POSTGRES_USER
+              value: temporal
+            - name: POSTGRES_PASSWORD
+              value: temporal
+          ports:
+            - name: http
+              containerPort: 5432
+              protocol: TCP
+          resources: {}
